@@ -1,0 +1,25 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  -webkit-user-select: none;
+  /* Chrome, Safari, and Opera */
+  -moz-user-select: none;
+  /* Firefox */
+  -ms-user-select: none;
+  /* Internet Explorer/Edge */
+  user-select: none;
+}
+
+
+.app-header {
+  -webkit-user-select: none;
+  -webkit-app-region: drag;
+  height: 26px;
+  background-color: #1f1f1f;
+  color: rgba(255, 255, 255, 0.85);
+}

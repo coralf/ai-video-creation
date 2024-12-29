@@ -1,0 +1,14 @@
+.add-row {}
+
+.add-row:active {
+  color: #1890ff;
+}
+
+.del-row {
+  /*color: #ff4d4f;*/
+}
+
+.del-row:active {
+  color: #1890ff;
+  /*color: #cf1322;*/
+}

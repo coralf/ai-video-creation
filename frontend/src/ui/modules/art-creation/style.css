@@ -1,0 +1,38 @@
+.operation-layout {
+  display: flex;
+  /* align-items: center; */
+  /* flex: 1; */
+  gap: 8px;
+  /* justify-content: space-between; */
+}
+
+.table-layout {}
+
+
+.table-row-drag-handler {
+  touch-action: none;
+  cursor: move;
+  padding: 24px 0;
+}
+
+.table-row-drag-handler:active {
+  color: #1890ff;
+}
+
+.create-action {
+  background: rgb(31, 31, 31);
+  cursor: pointer;
+  width: 150px;
+  height: 150px;
+}
+
+.create-action:active {
+  color: #1890ff;
+}
+
+.project-preview-image {
+  background: rgb(31, 31, 31);
+  width: 150px;
+  height: 150px;
+  cursor: pointer
+}

@@ -1,0 +1,1 @@
+export { ArtCreationPage } from './art-creation-page';

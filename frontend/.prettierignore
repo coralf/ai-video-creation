@@ -1,0 +1,7 @@
+build
+coverage
+**/*.html
+**/.git
+**/node_modules
+dist
+release
