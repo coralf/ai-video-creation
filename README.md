@@ -2,7 +2,7 @@
     中文</a>&nbsp ｜ &nbsp<a href="README_EN.md">English</a>&nbsp
 </p>
 <div align="center">
-  <a href=''><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Creation-github-brightgreen"></a>
+  <a href='https://github.com/coralf/ai-video-creation'><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Creation-github-brightgreen?link=https%3A%2F%2Fgithub.com%2Fcoralf%2Fai-video-creation"></a>
 </div>
 
 # AI Video Creation
@@ -98,8 +98,11 @@ python run.py
     </div>
 
 ## 设置
-
-
+### 音频设置
+点击试听后，生成视频时会按照试听的声音进行生成音频
+    <div align="center">
+        <img src="./assets/image_setting.png"/>
+    </div>
 
 ## TODOS
 - [ ] 支持字幕设置颜色，大小，位置
@@ -108,6 +111,9 @@ python run.py
 - [ ] 支持GPT-SoVITS
 - [ ] 支持开源大语言模型实现自动创作
 
+## 可以在这里一起讨论技术闲聊
+
+Q群: 1014339289
 
 ## 贡献指南
 
@@ -122,3 +128,8 @@ python run.py
 ---
 
 希望这个 `README.md` 文档能帮助你更好地介绍和维护 `ai-video-creation` 项目！如果有任何进一步的需求或修改，请随时告知。
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=coralf/ai-video-creation&type=Date)](https://star-history.com/#coralf/ai-video-creation&Date)

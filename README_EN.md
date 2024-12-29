@@ -2,7 +2,7 @@
     <a href="README.md">中文</a>&nbsp ｜ &nbspEnglish
 </p>
 <div align="center">
-  <a href=''><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Creation-github-brightgreen"></a>
+  <a href='https://github.com/coralf/ai-video-creation'><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Creation-github-brightgreen?link=https%3A%2F%2Fgithub.com%2Fcoralf%2Fai-video-creation"></a>
 </div>
 
 # AI Video Creation
@@ -97,6 +97,11 @@ python run.py
    </div>
 
 ## Configuration
+### Audio Setting
+After clicking on the preview, audio will be generated according to the sound of the preview when generating the video
+    <div align="center">
+        <img src="./assets/image_setting.png"/>
+    </div>
 
 ## TODOS
 - [ ] Support subtitle color, size, and position settings
@@ -118,3 +123,7 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 We hope this `README.md` document helps you better introduce and maintain the `ai-video-creation` project! If you have any further requirements or modifications, feel free to let us know.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=coralf/ai-video-creation&type=Date)](https://star-history.com/#coralf/ai-video-creation&Date)
