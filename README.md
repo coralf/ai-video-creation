@@ -1,3 +1,6 @@
+<p align="left">
+    中文</a>&nbsp ｜ &nbsp<a href="README_EN.md">English</a>&nbsp
+</p>
 <div align="center">
   <a href=''><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Creation-github-brightgreen"></a>
 </div>
