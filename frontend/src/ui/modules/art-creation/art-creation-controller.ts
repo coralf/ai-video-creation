@@ -7,7 +7,7 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 
 import { Autowired, Bean, CreateBeanManager, IocContainer } from '../../../common/ioc-manager';
-import { copyToClipboard, toJSON } from '../../utils/utils';
+import { copyToClipboard, isAvailableString, toJSON } from '../../utils/utils';
 import { ArtCreationStore, IEditTableDataItem, IImage } from './art-creation-store';
 import { DEFAULT_RANDOM_SEED } from '../../../common/constants';
 import { getProjectById, requestGenerateVideo, saveStoryboards } from '../../../api';
@@ -30,7 +30,7 @@ export class ArtCreationController {
     private artCreationStore = new ArtCreationStore()
 
     @Autowired
-    private options!: IOptions;
+    public options!: IOptions;
 
     private selfOptions: IArtCreationOptions = {}
 
@@ -53,22 +53,26 @@ export class ArtCreationController {
 
 
     public async init(options: IArtCreationOptions) {
-        this.selfOptions = options
-        const id = options.params.id;
-        const { data } = await getProjectById(id)
-        this.project = data
-        const editTableDataSource = this.project?.storyboards.map(item => {
-            return {
-                id: item.id,
-                prompts: item.prompts,
-                image: item.image,
-                randomSeed: item.seed,
-                writingText: item.subtitle
-            }
-        })
-        this.artCreationStore.setStore({
-            editTableDataSource
-        })
+        try {
+            this.selfOptions = options
+            const id = options.params.id;
+            const { data } = await getProjectById(id)
+            this.project = data
+            const editTableDataSource = this.project?.storyboards.map(item => {
+                return {
+                    id: item.id,
+                    prompts: item.prompts,
+                    image: item.image,
+                    randomSeed: item.seed,
+                    writingText: item.subtitle
+                }
+            })
+            this.artCreationStore.setStore({
+                editTableDataSource
+            })
+        } catch (e) {
+            console.error(e);
+        }
     }
 
 
@@ -83,8 +87,7 @@ export class ArtCreationController {
 
 
 
-    public save = async () => {
-        this.showLoading(true, '正在保存');
+    public saveSlient = async () => {
         const storyboards = this.store.editTableDataSource.map(item => {
             return {
                 id: item.id,
@@ -102,7 +105,12 @@ export class ArtCreationController {
             projectId: this.project?.id,
             storyboards
         })
+    }
 
+
+    public save = async () => {
+        this.showLoading(true, '正在保存');
+        await this.saveSlient();
         this.showLoading(false);
         this.antApi.message.success('保存成功');
     };
@@ -284,24 +292,70 @@ export class ArtCreationController {
 
 
     public generateVideo = async () => {
-        await requestGenerateVideo({
-            projectId: this.project?.id
-        })
-        await this.refresh()
-        this.notificationApi.success({ message: '生成视频成功' });
+        try {
+            this.showLoading(true, '正在生成视频');
+            await requestGenerateVideo({
+                projectId: this.project?.id
+            })
+            await this.refresh()
+            this.notificationApi.success({ message: '生成视频成功' });
+        } catch (e: any) {
+            console.error(e);
+            this.antApi.message.error(e.message);
+        } finally {
+            this.showLoading(false);
+        }
     }
 
-    public textToImage = (record: IEditTableDataItem) => {
-        this.generateImage(toJSON(record));
+    public textToImage = async (record: IEditTableDataItem) => {
+
+        try {
+            const storyboard = toJSON(record) as IEditTableDataItem;
+            if (!isAvailableString(storyboard.prompts)) {
+                this.antApi.message.error('请输入提示词');
+                return;
+            }
+            await this.generateImage(toJSON(record));
+            await this.saveSlient();
+        } catch (e) {
+            console.error(e);
+        }
+
     };
 
 
 
 
-    public batchToImage = () => {
-        return this.batchTextToImage(
-            toJSON(this.store.editTableDataSource),
-        );
+
+    private validateBatchToImage = (storyboards: IEditTableDataItem[]) => {
+        storyboards.forEach((storyboard, index) => {
+            if (!isAvailableString(storyboard.prompts)) {
+                throw new Error(`第${index + 1}行，请输入提示词`);
+            }
+        })
+    };
+
+    public batchToImage = async () => {
+        const progressKey = '1';
+        try {
+            this.validateBatchToImage(this.store.editTableDataSource);
+            await this.batchTextToImage(
+                toJSON(this.store.editTableDataSource),
+            );
+            this.notificationApi.success({
+                message: '批量生成图片成功',
+                description: '批量生成图片成功',
+                duration: null
+            })
+        } catch (err: unknown) {
+            console.error(err);
+            if (err instanceof Error) {
+                this.antApi.message.error(err.message);
+            }
+        } finally {
+            this.notificationApi.destroy(progressKey);
+        }
+
 
     };
 
@@ -348,5 +402,11 @@ export class ArtCreationController {
         for (const item of dataSource) {
             await this.generateImage(item);
         }
+        return this.saveSlient();
+    }
+
+
+    public handleCellBlur = (options: any, record: IEditTableDataItem, fieldName: string) => {
+        this.saveSlient();
     }
 }

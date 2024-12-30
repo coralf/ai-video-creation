@@ -7,6 +7,8 @@ from re import sub
 import string
 from typing import List
 import uuid
+from attr import validate
+from fastapi import HTTPException
 from numpy import save
 from pydub import AudioSegment
 import ChatTTS
@@ -72,7 +74,7 @@ class ProjectService:
         return projcetMeta.projects
 
     def getPreViewImageUrl(self, storyboards: List[StoryboardModel]):
-        
+
         if storyboards is not None and len(storyboards) > 0:
             storyboard = storyboards[0]
             if storyboard is not None and storyboard.image is not None:
@@ -113,9 +115,33 @@ class ProjectService:
         projectMeta.projects[projectIndex] = project
         write_json_to_file(projectMeta, getProjectMetaPath())
 
+    def validateProject(self, project: ProjectModel):
+        if project.storyboards is None or len(project.storyboards) == 0:
+            raise HTTPException(status_code=400, detail="请添加分镜")
+        storyboards = project.storyboards
+        for index, storyboard in enumerate(storyboards):
+            subtitleList = getCleanSubtitles(storyboard.subtitle)
+            if subtitleList is None or len(subtitleList) == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"第{index + 1}行的字幕文案不能为空，请编写文案",
+                )
+            if (
+                storyboard.image is None
+                or storyboard.image.id is None
+                or storyboard.image.id == ""
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"第{index + 1}行的图片不能为空，请生成图片",
+                )
+
     def generateVideo(self, projectId: str):
         project = self.getById(projectId)
         storyboards = project.storyboards
+
+        self.validateProject(project)
+
         # cleanText = replace_newlines_with_period(storyboards)
         subTitles = getSubtitles(project.storyboards)
         chatTTSSetting = getChatTTSSetting()

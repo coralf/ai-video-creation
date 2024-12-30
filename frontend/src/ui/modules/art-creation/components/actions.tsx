@@ -18,21 +18,9 @@ export const useBatchTextToImage = () => {
     const controller = useArtCreationController();
 
     const handleBatchImage = () => {
-        const progressKey = '1';
+       
         controller.batchToImage()
-            .then(() => {
-                controller.notificationApi.success({
-                    message: '批量生成图片成功',
-                    description: '批量生成图片成功',
-                    duration: null
-                })
-            })
-            .catch((err) => {
-                console.error(err);
-            })
-            .finally(() => {
-                controller.notificationApi.destroy(progressKey);
-            });
+            
         // api.info({
         //     key: progressKey,
         //     message: `批量生成图片中`,
@@ -81,6 +69,6 @@ export const Actions = observer(() => {
             <Button onClick={controller.copyText}>复制配音文案</Button>
         </Tooltip>
         <Button onClick={batchTextToImage}>批量生图</Button>
-        <Button type={'primary'} onClick={handleSave}>保存</Button>
+        {/* <Button type={'primary'} onClick={handleSave}>保存</Button> */}
     </Space>;
 });
