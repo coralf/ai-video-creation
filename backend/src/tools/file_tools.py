@@ -3,6 +3,7 @@ import json
 from os import name, path
 import uuid
 
+
 from backend.src.services.project_service.model import ProjectMetaModel
 
 
@@ -19,8 +20,8 @@ def write_json_to_file(data, filepath, indent=4):
 
 
 def getProjectsBasePath():
-    # projectsPath = path.join(path.dirname(os.getcwd()), "projects")
-    projectsPath = path.join("/root/projects/ai-creation", "projects")
+    basePath = path.dirname(path.dirname(path.dirname(path.dirname(__file__))))
+    projectsPath = path.join(basePath, "projects")
     ensure_directory_exists(projectsPath)
     return projectsPath
 

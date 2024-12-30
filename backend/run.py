@@ -14,8 +14,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "src.main:app",  # 指定FastAPI应用的位置
         host="0.0.0.0",  # 监听所有网络接口
-        port=8085,  # 默认端口
+        port=8085,  # 默认端口  
         reload=True,  # 开发模式下自动重载
         log_level="info",  # 日志级别
     )
- 

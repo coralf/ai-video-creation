@@ -7,7 +7,7 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 
 import { Autowired, Bean, CreateBeanManager, IocContainer } from '../../../common/ioc-manager';
-import { copyToClipboard, toJSON } from '../../utils/utils';
+import { copyToClipboard, isAvailableString, toJSON } from '../../utils/utils';
 import { ArtCreationStore, IEditTableDataItem, IImage } from './art-creation-store';
 import { DEFAULT_RANDOM_SEED } from '../../../common/constants';
 import { getProjectById, requestGenerateVideo, saveStoryboards } from '../../../api';
@@ -53,22 +53,26 @@ export class ArtCreationController {
 
 
     public async init(options: IArtCreationOptions) {
-        this.selfOptions = options
-        const id = options.params.id;
-        const { data } = await getProjectById(id)
-        this.project = data
-        const editTableDataSource = this.project?.storyboards.map(item => {
-            return {
-                id: item.id,
-                prompts: item.prompts,
-                image: item.image,
-                randomSeed: item.seed,
-                writingText: item.subtitle
-            }
-        })
-        this.artCreationStore.setStore({
-            editTableDataSource
-        })
+        try {
+            this.selfOptions = options
+            const id = options.params.id;
+            const { data } = await getProjectById(id)
+            this.project = data
+            const editTableDataSource = this.project?.storyboards.map(item => {
+                return {
+                    id: item.id,
+                    prompts: item.prompts,
+                    image: item.image,
+                    randomSeed: item.seed,
+                    writingText: item.subtitle
+                }
+            })
+            this.artCreationStore.setStore({
+                editTableDataSource
+            })
+        } catch (e) {
+            console.error(e);
+        }
     }
 
 
@@ -303,18 +307,55 @@ export class ArtCreationController {
         }
     }
 
-    public textToImage = (record: IEditTableDataItem) => {
-        this.generateImage(toJSON(record))
-            .then(() => this.saveSlient());
+    public textToImage = async (record: IEditTableDataItem) => {
+
+        try {
+            const storyboard = toJSON(record) as IEditTableDataItem;
+            if (!isAvailableString(storyboard.prompts)) {
+                this.antApi.message.error('请输入提示词');
+                return;
+            }
+            await this.generateImage(toJSON(record));
+            await this.saveSlient();
+        } catch (e) {
+            console.error(e);
+        }
+
     };
 
 
 
 
-    public batchToImage = () => {
-        return this.batchTextToImage(
-            toJSON(this.store.editTableDataSource),
-        );
+
+    private validateBatchToImage = (storyboards: IEditTableDataItem[]) => {
+        storyboards.forEach((storyboard, index) => {
+            if (!isAvailableString(storyboard.prompts)) {
+                throw new Error(`第${index + 1}行，请输入提示词`);
+            }
+        })
+    };
+
+    public batchToImage = async () => {
+        const progressKey = '1';
+        try {
+            this.validateBatchToImage(this.store.editTableDataSource);
+            await this.batchTextToImage(
+                toJSON(this.store.editTableDataSource),
+            );
+            this.notificationApi.success({
+                message: '批量生成图片成功',
+                description: '批量生成图片成功',
+                duration: null
+            })
+        } catch (err: unknown) {
+            console.error(err);
+            if (err instanceof Error) {
+                this.antApi.message.error(err.message);
+            }
+        } finally {
+            this.notificationApi.destroy(progressKey);
+        }
+
 
     };
 

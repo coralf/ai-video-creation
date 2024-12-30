@@ -80,7 +80,7 @@ export const PreviewVideoObservered = observer(() => {
         if (eleRef.current) {
             const containerWidth = eleRef.current?.offsetWidth
             setHeight(containerWidth * (16 / 9))
-            const phonePhysicalBorderRadius = 90; // 物理圆角半径（像素）
+            const phonePhysicalBorderRadius = 100; // 物理圆角半径（像素）
             const phoneScreenWidth = 1170;
             const calculatedBorderRadius = (phonePhysicalBorderRadius / phoneScreenWidth) * containerWidth;
             setBorderRadius(calculatedBorderRadius);

@@ -18,21 +18,9 @@ export const useBatchTextToImage = () => {
     const controller = useArtCreationController();
 
     const handleBatchImage = () => {
-        const progressKey = '1';
+       
         controller.batchToImage()
-            .then(() => {
-                controller.notificationApi.success({
-                    message: '批量生成图片成功',
-                    description: '批量生成图片成功',
-                    duration: null
-                })
-            })
-            .catch((err) => {
-                console.error(err);
-            })
-            .finally(() => {
-                controller.notificationApi.destroy(progressKey);
-            });
+            
         // api.info({
         //     key: progressKey,
         //     message: `批量生成图片中`,
