@@ -68,15 +68,8 @@ export const PreviewVideoObservered = observer(() => {
         }
     }
 
-    const generateVideo = async () => {
-        try {
-            controller.showLoading(true, '正在生成视频');
-            await controller.generateVideo();
-        } catch (e) {
-            console.error(e);
-        } finally {
-            controller.showLoading(false);
-        }
+    const generateVideo = () => {
+        controller.generateVideo()
     }
 
 
@@ -92,9 +85,7 @@ export const PreviewVideoObservered = observer(() => {
             const calculatedBorderRadius = (phonePhysicalBorderRadius / phoneScreenWidth) * containerWidth;
             setBorderRadius(calculatedBorderRadius);
         }
-    }, [])
-
-
+    }, [eleRef.current])
 
     return <div ref={ele => eleRef.current = ele}>
         <Title level={3}>
@@ -105,8 +96,8 @@ export const PreviewVideoObservered = observer(() => {
                 <Button onClick={generateVideo} type='primary'>生成视频</Button>
                 <Button icon={<ArrowDownOutlined />} onClick={() => triggerFileDownload(reactPlayerProps.url!)}>下载视频</Button>
             </Flex>
-            <Flex >
-                <Flex style={{ backgroundColor: '#000000', borderRadius: borderRadius, height }} justify='center' align='center'>
+            <Flex style={{ width: '100%' }} >
+                <Flex style={{ width: '100%', backgroundColor: '#000000', border: '1px solid #FFFFFFD9', borderRadius: borderRadius, height }} justify='center' align='center'>
                     <div style={{ marginTop: '-20%' }}>
                         <ReactPlayer {...reactPlayerProps} />
                     </div>

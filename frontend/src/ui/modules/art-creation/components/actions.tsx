@@ -81,6 +81,6 @@ export const Actions = observer(() => {
             <Button onClick={controller.copyText}>复制配音文案</Button>
         </Tooltip>
         <Button onClick={batchTextToImage}>批量生图</Button>
-        <Button type={'primary'} onClick={handleSave}>保存</Button>
+        {/* <Button type={'primary'} onClick={handleSave}>保存</Button> */}
     </Space>;
 });

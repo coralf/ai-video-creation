@@ -30,7 +30,7 @@ export class ArtCreationController {
     private artCreationStore = new ArtCreationStore()
 
     @Autowired
-    private options!: IOptions;
+    public options!: IOptions;
 
     private selfOptions: IArtCreationOptions = {}
 
@@ -83,8 +83,7 @@ export class ArtCreationController {
 
 
 
-    public save = async () => {
-        this.showLoading(true, '正在保存');
+    public saveSlient = async () => {
         const storyboards = this.store.editTableDataSource.map(item => {
             return {
                 id: item.id,
@@ -102,7 +101,12 @@ export class ArtCreationController {
             projectId: this.project?.id,
             storyboards
         })
+    }
 
+
+    public save = async () => {
+        this.showLoading(true, '正在保存');
+        await this.saveSlient();
         this.showLoading(false);
         this.antApi.message.success('保存成功');
     };
@@ -284,15 +288,24 @@ export class ArtCreationController {
 
 
     public generateVideo = async () => {
-        await requestGenerateVideo({
-            projectId: this.project?.id
-        })
-        await this.refresh()
-        this.notificationApi.success({ message: '生成视频成功' });
+        try {
+            this.showLoading(true, '正在生成视频');
+            await requestGenerateVideo({
+                projectId: this.project?.id
+            })
+            await this.refresh()
+            this.notificationApi.success({ message: '生成视频成功' });
+        } catch (e: any) {
+            console.error(e);
+            this.antApi.message.error(e.message);
+        } finally {
+            this.showLoading(false);
+        }
     }
 
     public textToImage = (record: IEditTableDataItem) => {
-        this.generateImage(toJSON(record));
+        this.generateImage(toJSON(record))
+            .then(() => this.saveSlient());
     };
 
 
@@ -348,5 +361,11 @@ export class ArtCreationController {
         for (const item of dataSource) {
             await this.generateImage(item);
         }
+        return this.saveSlient();
+    }
+
+
+    public handleCellBlur = (options: any, record: IEditTableDataItem, fieldName: string) => {
+        this.saveSlient();
     }
 }

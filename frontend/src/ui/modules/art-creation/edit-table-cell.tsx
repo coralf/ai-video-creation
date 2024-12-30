@@ -28,6 +28,7 @@ export interface EditableCellProps {
     children: React.ReactNode;
     onCellValueChange: (value: any) => void;
     componentProps?: any;
+    onCellBlur?: (options: any) => void;
 }
 
 const renderCellItem = (options: EditableCellProps) => {
@@ -43,16 +44,19 @@ const renderCellItem = (options: EditableCellProps) => {
                     height: options.componentProps?.style?.height || 150,
                     resize: 'none'
                 }}
+                onBlur={options.onCellBlur}
                 onChange={(v) => options.onCellValueChange(v.target.value || '')}
             />;
         },
         [InputType.Input]: () => {
             return <Input value={options.value || ''}
+                onBlur={options.onCellBlur}
                 onChange={(v) => options.onCellValueChange(v.target.value || '')}
             />;
         },
         [InputType.InputNumber]: () => {
             return <InputNumber min={1} max={1000000} value={options.value}
+                onBlur={options.onCellBlur}
                 onChange={(value) => options.onCellValueChange(value)}
             />;
         },
@@ -109,9 +113,14 @@ export const EditableCell: React.FC<EditableCellProps & { [key: string]: any }> 
         controller.handleCellValueChange(value, record, dataIndex);
     };
 
+    const handleCellBlur = (options: any) => {
+        controller.handleCellBlur(options, record, dataIndex);
+    };
+
     const renderProps: EditableCellProps = {
         ...props,
         ...restProps,
+        onCellBlur: handleCellBlur,
         onCellValueChange: handleChange
     };
 
