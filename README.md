@@ -39,14 +39,14 @@ AI Video Creation 是一个开源项目，旨在利用人工智能技术自动�
 ### 克隆仓库
 
 ```bash
-git clone https://github.com/coralf/ai-creation.git
+git clone https://github.com/coralf/ai-video-creation.git
 ```
 
 ### 前端
 
 **安装依赖**
 ```bash
-cd ai-creation/frontend
+cd ai-video-creation/frontend
 npm install
 ```
 
@@ -65,7 +65,7 @@ poetry install
 
 **运行后端**
 ```bash
-cd ai-creation/backend
+cd ai-video-creation/backend
 python run.py
 ```
 

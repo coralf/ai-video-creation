@@ -39,14 +39,14 @@ AI Video Creation is an open-source project aimed at automatically generating ar
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/coralf/ai-creation.git
+git clone https://github.com/coralf/ai-video-creation.git
 ```
 
 ### Frontend
 
 **Install Dependencies**
 ```bash
-cd ai-creation/frontend
+cd ai-video-creation/frontend
 npm install
 ```
 
@@ -65,7 +65,7 @@ poetry install
 
 **Run the Backend**
 ```bash
-cd ai-creation/backend
+cd ai-video-creation/backend
 python run.py
 ```
 
