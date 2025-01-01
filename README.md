@@ -2,7 +2,8 @@
     中文</a>&nbsp ｜ &nbsp<a href="README_EN.md">English</a>&nbsp
 </p>
 <div align="center">
-  <a href='https://github.com/coralf/ai-video-creation'><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Creation-github-brightgreen?link=https%3A%2F%2Fgithub.com%2Fcoralf%2Fai-video-creation"></a>
+  <a href='https://github.com/coralf/ai-video-creation'><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Video%20Creation-passing-brightgreen">
+</a>
 </div>
 
 # AI Video Creation
