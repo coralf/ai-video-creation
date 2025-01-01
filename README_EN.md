@@ -2,7 +2,7 @@
     <a href="README.md">中文</a>&nbsp ｜ &nbspEnglish
 </p>
 <div align="center">
-  <a href='https://github.com/coralf/ai-video-creation'><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Video%20Creation-passing-brightgreen">
+  <a href='https://github.com/coralf/ai-video-creation'><img alt="Static Badge" src="https://img.shields.io/badge/AI%20Video%20Creation-GitHub-brightgreen">
 </a>
 </div>
 
