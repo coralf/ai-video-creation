@@ -5,7 +5,11 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import { merge } from 'webpack-merge';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import ESLintPlugin from 'eslint-webpack-plugin';
-import baseConfig from './webpack.config.base';
+import { fileURLToPath } from 'url';
+import baseConfig from './webpack.config.base.ts';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const port = process.env.PORT || 1212;
 
@@ -58,6 +62,10 @@ const configuration: webpack.Configuration = {
       // Images
       {
         test: /\.(png|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+      },
+      {
+        test: /\.(mp4|mov|webm)$/i,
         type: 'asset/resource',
       },
       // SVG

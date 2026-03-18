@@ -5,6 +5,11 @@
 import webpack from 'webpack';
 import TsconfigPathsPlugins from 'tsconfig-paths-webpack-plugin';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const configuration: webpack.Configuration = {
   externals: [],
 
@@ -18,8 +23,8 @@ const configuration: webpack.Configuration = {
         use: {
           loader: 'ts-loader',
           options: {
-            // Remove this line to enable type checking in webpack builds
-            // transpileOnly: true,
+            // Dev startup favors fast transpilation over blocking on stale type caches.
+            transpileOnly: true,
             compilerOptions: {
               module: 'esnext',
             },

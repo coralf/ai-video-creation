@@ -4,9 +4,9 @@
   "license": "MIT",
   "contributors": [],
   "scripts": {
-    "build": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./scripts/webpack.config.renderer.prod.ts",
+    "build": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"esnext\\\"} webpack --config ./scripts/webpack.config.renderer.prod.ts",
     "lint": "cross-env NODE_ENV=development eslint 'src/**/*.{ts,tsx}' --ignore-pattern '!src/'",
-    "start": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./scripts/webpack.config.renderer.dev.ts",
+    "start": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"esnext\\\"} webpack serve --config ./scripts/webpack.config.renderer.dev.ts",
     "test": "jest"
   },
   "browserslist": [],
@@ -54,6 +54,7 @@
     "@dnd-kit/modifiers": "^7.0.0",
     "@dnd-kit/sortable": "^8.0.0",
     "@emotion/react": "^11.14.0",
+    "@tldraw/tldraw": "^4.4.1",
     "antd": "^5.11.0",
     "axios": "^1.6.0",
     "classnames": "^2.5.1",
@@ -142,7 +143,7 @@
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.9.0"
   },
-  "devEngines": {
+  "engines": {
     "node": ">=18.20.5",
     "npm": ">=10.8.2"
   }
