@@ -1,17 +1,6 @@
-import '@tldraw/tldraw/tldraw.css';
-
-import React, { KeyboardEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    AssetRecordType,
-    createShapeId,
-    Editor,
-    PageRecordType,
-    Tldraw,
-    type TLAsset,
-    type TLImageShape,
-    type TLShape,
-    type TLVideoShape,
-} from '@tldraw/tldraw';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { InfiniteCanvas, type CanvasItem, type CanvasViewport } from './InfiniteCanvas';
+import { FloatingChat, type ChatMode } from './FloatingChat';
 import { generateWorkspaceAsset, getWorkspaceConfig, IWorkspaceConfigResponse } from '../../../api';
 import type {
     IWorkspaceAsset,
@@ -29,12 +18,6 @@ import videoTimesheet from '../../../../../assets/output.mp4';
 
 const defaultAssistantCopy = '描述你想要的图片，或先选中一张图把它 @ 到输入框里，然后继续生成视频。';
 
-const starterPrompts = [
-    '生成一张具有电影感的海边日落图',
-    '生成一张未来感城市夜景图，适合做视频封面',
-    '生成一张极简产品广告风格的工作台主视觉',
-];
-
 const CONVERSATION_STORAGE_KEY = 'workspace-conversations-v5';
 const ACTIVE_CONVERSATION_STORAGE_KEY = 'workspace-active-conversation-id-v5';
 
@@ -45,8 +28,6 @@ const demoAssets: Array<Pick<IWorkspaceAsset, 'type' | 'prompt' | 'previewUrl' |
     { type: 'image', prompt: '演示图片 04', previewUrl: imageSetting, downloadUrl: imageSetting, width: 960, height: 1260 },
     { type: 'video', prompt: '演示视频素材', previewUrl: videoTimesheet, downloadUrl: videoTimesheet, width: 1280, height: 720 },
 ];
-
-type TResizeState = { dragging: boolean } | null;
 
 const formatTime = (date = new Date()) => new Intl.DateTimeFormat('zh-CN', {
     hour: '2-digit',
@@ -172,53 +153,6 @@ const hydrateConversation = (raw: Partial<IWorkspaceConversation>, index: number
     };
 };
 
-const getPageId = (conversationId: string) => PageRecordType.createId(`workspace-${conversationId}`);
-const getTlAssetId = (assetId: string) => AssetRecordType.createId(`workspace-${assetId}`);
-const getTlShapeId = (assetId: string) => createShapeId(`workspace-${assetId}`);
-
-type TCanvasShape = TLImageShape | TLVideoShape;
-
-const isCanvasShape = (shape: TLShape): shape is TCanvasShape => shape.type === 'image' || shape.type === 'video';
-
-const getMimeType = (asset: IWorkspaceAsset) => {
-    if (asset.type === 'video') {
-        return 'video/mp4';
-    }
-    return 'image/png';
-};
-
-const getApproximateFileSize = (asset: IWorkspaceAsset) => {
-    const pixels = Math.max(1, asset.width * asset.height);
-    if (asset.type === 'video') {
-        return Math.max(1024 * 1024, Math.round(pixels * 0.45));
-    }
-    return Math.max(32 * 1024, Math.round(pixels * 0.18));
-};
-
-const toTlAsset = (asset: IWorkspaceAsset): TLAsset | null => {
-    const src = asset.downloadUrl || asset.previewUrl;
-    if (!src) {
-        return null;
-    }
-
-    return {
-        id: getTlAssetId(asset.id),
-        typeName: 'asset',
-        type: asset.type,
-        props: {
-            name: asset.prompt,
-            src,
-            w: asset.width,
-            h: asset.height,
-            mimeType: getMimeType(asset),
-            isAnimated: asset.type === 'video',
-            fileSize: getApproximateFileSize(asset),
-        },
-        meta: {
-            workspaceAssetId: asset.id,
-        },
-    } as TLAsset;
-};
 
 export const WorkspacePage = () => {
     const [initialConversation] = useState<IWorkspaceConversation>(() => createConversation());
@@ -228,26 +162,10 @@ export const WorkspacePage = () => {
     const [config, setConfig] = useState<IWorkspaceConfigResponse | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [isHydrated, setIsHydrated] = useState(false);
-    const [stageWidth, setStageWidth] = useState(62);
-    const frameRef = useRef<HTMLDivElement | null>(null);
-    const resizeStateRef = useRef<TResizeState>(null);
-    const messagesRef = useRef<HTMLDivElement | null>(null);
-    const editorRef = useRef<Editor | null>(null);
-    const syncLockRef = useRef(false);
-    const rafSyncRef = useRef<number | null>(null);
-    const activeConversationRef = useRef<IWorkspaceConversation | null>(initialConversation);
 
     const activeConversation = useMemo(() => {
         return conversations.find((conversation) => conversation.id === activeConversationId) || conversations[0];
     }, [activeConversationId, conversations]);
-
-    useEffect(() => {
-        activeConversationRef.current = activeConversation;
-    }, [activeConversation]);
-
-    const selectedAsset = useMemo(() => {
-        return activeConversation?.assets.find((asset) => asset.id === activeConversation.selectedAssetId) || null;
-    }, [activeConversation]);
 
     useEffect(() => {
         getWorkspaceConfig()
@@ -301,42 +219,6 @@ export const WorkspacePage = () => {
         return () => window.clearTimeout(timer);
     }, [notice]);
 
-    useEffect(() => {
-        const container = messagesRef.current;
-        if (!container) {
-            return;
-        }
-        container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth',
-        });
-    }, [activeConversation?.messages, loading]);
-
-    useEffect(() => {
-        const handlePointerMove = (event: PointerEvent) => {
-            if (!resizeStateRef.current?.dragging || !frameRef.current || window.innerWidth <= 1100) {
-                return;
-            }
-
-            const bounds = frameRef.current.getBoundingClientRect();
-            const ratio = ((event.clientX - bounds.left) / bounds.width) * 100;
-            const nextWidth = Math.min(78, Math.max(34, ratio));
-            setStageWidth(nextWidth);
-        };
-
-        const handlePointerUp = () => {
-            resizeStateRef.current = null;
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
-        };
-
-        window.addEventListener('pointermove', handlePointerMove);
-        window.addEventListener('pointerup', handlePointerUp);
-        return () => {
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerUp);
-        };
-    }, []);
 
     const updateConversationById = (conversationId: string, updater: (conversation: IWorkspaceConversation) => IWorkspaceConversation) => {
         setConversations((current) => current.map((conversation) => (
@@ -369,7 +251,6 @@ export const WorkspacePage = () => {
             setNotice('当前首版仅支持将图片素材 @ 到输入框中。');
             return;
         }
-
         setComposerReference({
             assetId: asset.id,
             type: 'image',
@@ -380,220 +261,37 @@ export const WorkspacePage = () => {
         setNotice('已将图片加入输入框引用。');
     };
 
-    const downloadAsset = (asset: IWorkspaceAsset) => {
-        const targetUrl = asset.downloadUrl || asset.previewUrl;
-        if (!targetUrl) {
-            setNotice('当前素材还没有可下载地址。');
-            return;
-        }
+    // ---------------------------------------------------------------------------
+    // InfiniteCanvas handlers
+    // ---------------------------------------------------------------------------
 
-        const anchor = document.createElement('a');
-        anchor.href = targetUrl;
-        anchor.download = `${asset.type}-${asset.id}`;
-        anchor.rel = 'noreferrer';
-        anchor.target = '_blank';
-        anchor.click();
+    const handleCanvasSelect = (id: string | null) => {
+        if (!activeConversation) return;
+        updateConversationById(activeConversation.id, (conv) => ({ ...conv, selectedAssetId: id }));
     };
 
-    const syncConversationToEditor = (conversation: IWorkspaceConversation) => {
-        const editor = editorRef.current;
-        if (!editor) {
-            return;
-        }
-
-        syncLockRef.current = true;
-        try {
-            const pageId = getPageId(conversation.id);
-            if (!editor.getPage(pageId)) {
-                editor.createPage({ id: pageId, name: conversation.title || '工作台' });
-            }
-            if (editor.getCurrentPageId() !== pageId) {
-                editor.setCurrentPage(pageId);
-            }
-
-            const currentShapes = editor.getCurrentPageShapes().filter(isCanvasShape);
-            const nextShapeIds = new Set(conversation.assets.map((asset) => getTlShapeId(asset.id)));
-            const nextAssetIds = new Set(conversation.assets.map((asset) => getTlAssetId(asset.id)));
-
-            const shapesToDelete = currentShapes
-                .filter((shape) => !nextShapeIds.has(shape.id))
-                .map((shape) => shape.id);
-
-            if (shapesToDelete.length > 0) {
-                editor.deleteShapes(shapesToDelete);
-            }
-
-            const assetsToDelete = editor.getAssets()
-                .filter((asset) => !nextAssetIds.has(asset.id) && String(asset.id).includes('workspace-'))
-                .map((asset) => asset.id);
-
-            if (assetsToDelete.length > 0) {
-                editor.deleteAssets(assetsToDelete);
-            }
-
-            const assetsToCreate: TLAsset[] = [];
-            const assetUpdates: TLAsset[] = [];
-            const shapeCreates: any[] = [];
-            const shapeUpdates: any[] = [];
-
-            conversation.assets.forEach((asset) => {
-                const tlAsset = toTlAsset(asset);
-                const shapeId = getTlShapeId(asset.id);
-                const assetId = getTlAssetId(asset.id);
-
-                if (tlAsset) {
-                    if (editor.getAsset(assetId)) {
-                        assetUpdates.push(tlAsset);
-                    } else {
-                        assetsToCreate.push(tlAsset);
-                    }
-                }
-
-                const existingShape = editor.getShape(shapeId);
-                const shapePartial = {
-                    id: shapeId,
-                    type: asset.type,
-                    x: asset.x,
-                    y: asset.y,
-                    opacity: 1,
-                    props: {
-                        assetId: tlAsset ? assetId : null,
-                        w: asset.width,
-                        h: asset.height,
-                    },
-                };
-
-                if (existingShape) {
-                    shapeUpdates.push(shapePartial);
-                } else {
-                    shapeCreates.push(shapePartial);
-                }
-            });
-
-            if (assetsToCreate.length > 0) {
-                editor.createAssets(assetsToCreate);
-            }
-            if (assetUpdates.length > 0) {
-                editor.updateAssets(assetUpdates);
-            }
-            if (shapeCreates.length > 0) {
-                editor.createShapes(shapeCreates);
-            }
-            if (shapeUpdates.length > 0) {
-                editor.updateShapes(shapeUpdates);
-            }
-
-            const selectedShapeId = conversation.selectedAssetId ? getTlShapeId(conversation.selectedAssetId) : null;
-            if (selectedShapeId && editor.getShape(selectedShapeId)) {
-                editor.select(selectedShapeId);
-            } else {
-                editor.selectNone();
-            }
-
-            editor.setCamera({
-                x: conversation.viewport.x,
-                y: conversation.viewport.y,
-                z: conversation.viewport.scale,
-            });
-        } finally {
-            window.setTimeout(() => {
-                syncLockRef.current = false;
-            }, 0);
-        }
+    const handleCanvasViewportChange = (vp: CanvasViewport) => {
+        if (!activeConversation) return;
+        updateConversationById(activeConversation.id, (conv) => ({ ...conv, viewport: vp }));
     };
 
-    useEffect(() => {
-        if (activeConversation) {
-            syncConversationToEditor(activeConversation);
-        }
-    }, [activeConversation]);
-
-    const syncConversationFromEditor = () => {
-        const editor = editorRef.current;
-        const conversation = activeConversationRef.current;
-        if (!editor || !conversation || syncLockRef.current) {
-            return;
-        }
-
-        const flush = () => {
-            rafSyncRef.current = null;
-            const pageId = getPageId(conversation.id);
-            if (editor.getCurrentPageId() !== pageId) {
-                return;
-            }
-
-            const camera = editor.getCamera();
-            const selectedShape = editor.getSelectedShapes().find(isCanvasShape);
-            const shapeMap = new Map(
-                editor.getCurrentPageShapes()
-                    .filter(isCanvasShape)
-                    .map((shape) => [shape.id, shape]),
-            );
-
-            updateConversationById(conversation.id, (currentConversation) => ({
-                ...currentConversation,
-                selectedAssetId: selectedShape
-                    ? currentConversation.assets.find((asset) => getTlShapeId(asset.id) === selectedShape.id)?.id || null
-                    : null,
-                viewport: {
-                    x: camera.x,
-                    y: camera.y,
-                    scale: camera.z,
-                },
-                assets: currentConversation.assets.map((asset) => {
-                    const shape = shapeMap.get(getTlShapeId(asset.id));
-                    if (!shape || !isCanvasShape(shape)) {
-                        return asset;
-                    }
-
-                    return {
-                        ...asset,
-                        x: shape.x,
-                        y: shape.y,
-                        width: typeof shape.props.w === 'number' ? shape.props.w : asset.width,
-                        height: typeof shape.props.h === 'number' ? shape.props.h : asset.height,
-                    };
-                }),
-            }));
-        };
-
-        if (rafSyncRef.current !== null) {
-            window.cancelAnimationFrame(rafSyncRef.current);
-        }
-        rafSyncRef.current = window.requestAnimationFrame(flush);
+    const handleCanvasItemChange = (
+        id: string,
+        patch: { x?: number; y?: number; width?: number; height?: number },
+    ) => {
+        if (!activeConversation) return;
+        updateConversationById(activeConversation.id, (conv) => ({
+            ...conv,
+            assets: conv.assets.map((asset) => (asset.id === id ? { ...asset, ...patch } : asset)),
+        }));
     };
 
-    const bindEditor = (editor: Editor) => {
-        editorRef.current = editor;
-        editor.on('change', syncConversationFromEditor);
-        editor.on('event', (info) => {
-            if ((info as any)?.name !== 'double_click') {
-                return;
-            }
-
-            const conversation = activeConversationRef.current;
-            if (!conversation) {
-                return;
-            }
-
-            const selectedShape = editor.getSelectedShapes().find(isCanvasShape);
-            if (!selectedShape || selectedShape.type !== 'image') {
-                return;
-            }
-
-            const matchedAsset = conversation.assets.find((asset) => getTlShapeId(asset.id) === selectedShape.id);
-            if (matchedAsset) {
-                insertReferenceFromAsset(matchedAsset);
-            }
-        });
-        editor.setCurrentTool('select');
-
-        if (activeConversationRef.current) {
-            syncConversationToEditor(activeConversationRef.current);
-        }
+    const handleCanvasDoubleClick = (id: string) => {
+        const asset = activeConversation?.assets.find((a) => a.id === id);
+        if (asset) insertReferenceFromAsset(asset);
     };
 
-    const submit = async () => {
+    const submit = async (chatMode: ChatMode = 'agent') => {
         if (!activeConversation || loading) {
             return;
         }
@@ -603,7 +301,14 @@ export const WorkspacePage = () => {
             return;
         }
 
-        const mode: IWorkspaceGenerationRequest['mode'] = activeConversation.composerReference ? 'image_to_video' : 'text_to_image';
+        const mode: IWorkspaceGenerationRequest['mode'] =
+            chatMode === 'video'
+                ? 'image_to_video'
+                : chatMode === 'image'
+                    ? 'text_to_image'
+                    : activeConversation.composerReference
+                        ? 'image_to_video'
+                        : 'text_to_image';
         const requestPayload: IWorkspaceGenerationRequest = {
             mode,
             text: prompt,
@@ -697,28 +402,6 @@ export const WorkspacePage = () => {
         }
     };
 
-    const startDividerDragging = (event: ReactPointerEvent<HTMLButtonElement>) => {
-        if (window.innerWidth <= 1100) {
-            return;
-        }
-
-        resizeStateRef.current = { dragging: true };
-        document.body.style.cursor = 'col-resize';
-        document.body.style.userSelect = 'none';
-        event.preventDefault();
-    };
-
-    const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            submit();
-        }
-    };
-
-    const usePrompt = (prompt: string) => {
-        setComposerText(prompt);
-    };
-
     const resetConversation = () => {
         const nextConversation = createConversation('reset');
         setConversations((current) => [nextConversation, ...current]);
@@ -739,199 +422,49 @@ export const WorkspacePage = () => {
         }
     };
 
+    const canvasItems = useMemo<CanvasItem[]>(() =>
+        (activeConversation?.assets ?? []).map((asset) => ({
+            id: asset.id,
+            type: asset.type,
+            x: asset.x,
+            y: asset.y,
+            width: asset.width,
+            height: asset.height,
+            src: asset.previewUrl ?? asset.downloadUrl,
+            isGenerating: asset.status === 'generating',
+            isFailed: asset.status === 'failed',
+            label: asset.prompt,
+        })),
+        [activeConversation?.assets],
+    );
+
     if (!activeConversation) {
         return null;
     }
 
     return (
         <div className='workspace-page'>
-            <div className='workspace-shell' ref={frameRef}>
-                <section className='workspace-panel workspace-stage' style={{ width: `${stageWidth}%` }}>
-                    <div className='workspace-stage-inner'>
-                        <div className='workspace-panel-bar'>
-                            <div>
-                                <div className='workspace-panel-kicker'>Canvas</div>
-                                <h1 className='workspace-panel-title'>创作画布</h1>
-                                <div className='workspace-panel-copy'>
-                                    左侧已经切成无限画布内核。你可以像创作工具一样自由平移、缩放、拖动和缩放素材，后续会继续往多选、分组、排版和时间轴方向扩展。
-                                </div>
-                            </div>
-                            <div className='workspace-chip-row'>
-                                <div className='workspace-chip workspace-chip-strong'>Infinite Canvas</div>
-                                <div className='workspace-chip'>{activeConversation.assets.length} Assets</div>
-                                <div className='workspace-chip'>
-                                    {Math.round(activeConversation.viewport.scale * 100)}%
-                                </div>
-                            </div>
-                        </div>
-                        <div className='workspace-stage-toolbar'>
-                            <div className='workspace-stage-toolbar-copy'>
-                                {selectedAsset ? `已选中：${selectedAsset.prompt}` : '使用鼠标滚轮缩放，按住空白区域拖动视口，点击素材后可自由编辑'}
-                            </div>
-                            <div className='workspace-stage-toolbar-actions'>
-                                <button
-                                    className='workspace-button workspace-button-ghost workspace-button-small'
-                                    disabled={!selectedAsset || selectedAsset.type !== 'image'}
-                                    onClick={() => selectedAsset && insertReferenceFromAsset(selectedAsset)}
-                                    type='button'
-                                >
-                                    @ 添加引用
-                                </button>
-                                <button
-                                    className='workspace-button workspace-button-primary workspace-button-small'
-                                    disabled={!selectedAsset}
-                                    onClick={() => selectedAsset && downloadAsset(selectedAsset)}
-                                    type='button'
-                                >
-                                    下载素材
-                                </button>
-                            </div>
-                        </div>
-                        <div className='workspace-stage-frame workspace-stage-frame-canvas'>
-                            <div className='workspace-tldraw-shell'>
-                                <Tldraw
-                                    autoFocus={false}
-                                    hideUi
-                                    onMount={bindEditor}
-                                />
-                            </div>
-                            {activeConversation.assets.length === 0 ? (
-                                <div className='workspace-stage-empty workspace-stage-empty-overlay'>
-                                    左侧画布区暂时留白
-                                    <span>从右侧输入一句文案，先生成第一张图片开始。</span>
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
-                </section>
-                <div className='workspace-divider' role='separator' aria-orientation='vertical'>
-                    <button
-                        aria-label='调整画布与侧边栏宽度'
-                        className='workspace-divider-handle'
-                        onPointerDown={startDividerDragging}
-                        type='button'
-                    />
-                </div>
-                <section className='workspace-panel workspace-chat'>
-                    <header className='workspace-chat-header'>
-                        <div className='workspace-chat-topbar'>
-                            <div>
-                                <div className='workspace-panel-kicker'>Sidebar</div>
-                                <h2 className='workspace-chat-title'>AI Sidebar</h2>
-                                <div className='workspace-chat-subtitle'>
-                                    侧边栏当前聚焦在两个 MVP 能力：文生图，以及基于被引用图片生成视频。
-                                </div>
-                            </div>
-                            <button className='workspace-button workspace-button-ghost workspace-button-small' onClick={resetConversation} type='button'>
-                                新会话
-                            </button>
-                        </div>
-                        <div className='workspace-chat-status'>
-                            <div className={`workspace-status-pill ${config?.imageConfigured ? 'workspace-status-ready' : ''}`}>
-                                <span className='workspace-status-dot' />
-                                Image {config?.imageConfigured ? 'Ready' : 'Not Ready'}
-                            </div>
-                            <div className={`workspace-status-pill ${config?.videoConfigured ? 'workspace-status-ready' : ''}`}>
-                                <span className='workspace-status-dot' />
-                                Video {config?.videoConfigured ? 'Ready' : 'Not Ready'}
-                            </div>
-                            <div className='workspace-status-pill'>
-                                <span className='workspace-status-dot' />
-                                Model {config?.imageModel || config?.videoModel || 'Not Set'}
-                            </div>
-                        </div>
-                        <div className='workspace-conversation-list'>
-                            {conversations.slice(0, 6).map((conversation) => (
-                                <button
-                                    className={`workspace-conversation-card ${conversation.id === activeConversationId ? 'workspace-conversation-card-active' : ''}`}
-                                    key={conversation.id}
-                                    onClick={() => openConversation(conversation.id)}
-                                    type='button'
-                                >
-                                    <span className='workspace-conversation-title'>{conversation.title}</span>
-                                    <span className='workspace-conversation-time'>{conversation.updatedAt}</span>
-                                </button>
-                            ))}
-                        </div>
-                        {activeConversation.messages.length <= 1 ? (
-                            <div className='workspace-starter-grid'>
-                                {starterPrompts.map((prompt) => (
-                                    <button
-                                        className='workspace-starter-card'
-                                        key={prompt}
-                                        onClick={() => usePrompt(prompt)}
-                                        type='button'
-                                    >
-                                        {prompt}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : null}
-                    </header>
-                    <div className='workspace-messages' ref={messagesRef}>
-                        {activeConversation.messages.map((item) => (
-                            <div className={`workspace-message-row workspace-message-row-${item.role}`} key={item.id}>
-                                <div className='workspace-message-meta'>
-                                    <span className='workspace-message-role'>
-                                        {item.role === 'user' ? 'You' : 'AI'}
-                                    </span>
-                                    <span className='workspace-message-time'>{item.createdAt}</span>
-                                </div>
-                                <div className={`workspace-message workspace-message-${item.role} ${item.status === 'failed' ? 'workspace-message-failed' : ''}`}>
-                                    {item.content}
-                                </div>
-                                <button
-                                    className='workspace-message-action'
-                                    onClick={() => copyMessage(item.content)}
-                                    type='button'
-                                >
-                                    复制
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    <footer className='workspace-composer'>
-                        <div className='workspace-composer-reference-row'>
-                            {activeConversation.composerReference ? (
-                                <div className='workspace-reference-token'>
-                                    <span className='workspace-reference-token-label'>@ {activeConversation.composerReference.name}</span>
-                                    <button
-                                        className='workspace-reference-token-remove'
-                                        onClick={() => setComposerReference(null)}
-                                        type='button'
-                                    >
-                                        清除
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className='workspace-composer-reference-empty'>未引用图片时默认执行文生图。</div>
-                            )}
-                        </div>
-                        <textarea
-                            className='workspace-textarea'
-                            onChange={(event) => setComposerText(event.target.value)}
-                            onKeyDown={onKeyDown}
-                            placeholder={activeConversation.composerReference ? '描述你想基于这张图生成什么样的视频...' : '输入你的图片创作需求，Enter 直接发送。'}
-                            value={activeConversation.composerText}
-                        />
-                        <div className='workspace-composer-row'>
-                            <div className='workspace-composer-actions'>
-                                <button
-                                    className='workspace-button workspace-button-primary'
-                                    disabled={loading}
-                                    onClick={submit}
-                                    type='button'
-                                >
-                                    {loading ? '生成中...' : activeConversation.composerReference ? '生成视频' : '生成图片'}
-                                </button>
-                            </div>
-                            <div className='workspace-composer-tip'>
-                                Enter 发送，Shift + Enter 换行。双击已选中的图片可加入 `@` 引用。
-                            </div>
-                        </div>
-                    </footer>
-                </section>
-            </div>
+            {/* Full-screen canvas */}
+            <InfiniteCanvas
+                key={activeConversation.id}
+                items={canvasItems}
+                selectedId={activeConversation.selectedAssetId}
+                viewport={activeConversation.viewport}
+                onViewportChange={handleCanvasViewportChange}
+                onSelect={handleCanvasSelect}
+                onItemChange={handleCanvasItemChange}
+                onDoubleClick={handleCanvasDoubleClick}
+            />
+
+            {/* Floating chat panel */}
+            <FloatingChat
+                activeConversation={activeConversation}
+                loading={loading}
+                onSubmit={submit}
+                onComposerTextChange={setComposerText}
+                onComposerReferenceChange={setComposerReference}
+            />
+
             {notice ? <div className='workspace-toast'>{notice}</div> : null}
         </div>
     );

@@ -66,15 +66,13 @@ textarea {
 }
 
 .workspace-stage {
-  flex: 0 0 auto;
-  min-width: 320px;
-  height: 100%;
-  overflow: hidden;
+  position: absolute;
+  inset: 0;
   background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
     radial-gradient(circle at top left, rgba(240, 141, 73, 0.09), transparent 22%),
     linear-gradient(180deg, rgba(12, 16, 22, 0.98), rgba(8, 11, 16, 0.98));
-  border-right: 1px solid var(--line);
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.03);
+  background-size: 32px 32px, 100% 100%, 100% 100%;
 }
 
 .workspace-stage-inner {
@@ -201,22 +199,10 @@ textarea {
   z-index: 1;
   overflow: hidden;
   border-radius: 32px;
-}
-
-.workspace-tldraw-shell .tl-container,
-.workspace-tldraw-shell .tl-theme__dark {
-  background: transparent;
-}
-
-.workspace-tldraw-shell .tl-background {
+  /* dot-grid background for the infinite canvas */
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-  background-size: 120px 120px;
-}
-
-.workspace-tldraw-shell .tl-page {
-  background: transparent;
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 .workspace-canvas-world {
@@ -783,4 +769,312 @@ textarea {
   .workspace-stage-toolbar-actions {
     width: 100%;
   }
+}
+
+/* ============================================================
+   Floating Chat Panel
+   ============================================================ */
+
+.fc-panel {
+  position: absolute;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: #0d0d10;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  touch-action: none;
+}
+
+/* ── Title bar ── */
+.fc-titlebar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 14px;
+  cursor: move;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  user-select: none;
+}
+
+.fc-titlebar-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.22);
+}
+
+.fc-minimize-btn {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.fc-minimize-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Composer box ── */
+.fc-composer {
+  margin: 12px;
+  background: #111116;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s;
+}
+
+.fc-composer:focus-within {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* Reference chip */
+.fc-ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 12px 0;
+  padding: 3px 8px 3px 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.fc-ref-chip-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+}
+
+.fc-ref-chip-remove {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.12s;
+}
+
+.fc-ref-chip-remove:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Textarea */
+.fc-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px 14px 8px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #ffffff;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.fc-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* Bottom control row */
+.fc-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Spacer (fills blank area above composer) ── */
+.fc-spacer {
+  flex: 1;
+}
+
+/* ── Custom mode dropdown ── */
+.fc-dropdown {
+  position: relative;
+}
+
+/* Trigger pill button */
+.fc-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.fc-dropdown-trigger:hover,
+.fc-dropdown-trigger-open {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.fc-dropdown-trigger-label {
+  line-height: 1;
+}
+
+.fc-dropdown-arrow {
+  color: rgba(255, 255, 255, 0.35);
+  transition: transform 0.18s;
+  flex-shrink: 0;
+}
+
+.fc-dropdown-arrow-up {
+  transform: rotate(180deg);
+}
+
+/* Options panel — floats upward */
+.fc-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 120px;
+  background: #18181e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Each option row */
+.fc-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  position: relative;
+}
+
+.fc-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.fc-dropdown-item-active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.fc-dropdown-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  flex: 1;
+}
+
+.fc-dropdown-item-check {
+  color: rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* Send button */
+.fc-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+
+.fc-send-btn.fc-send-btn-active {
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+}
+
+.fc-send-btn.fc-send-btn-active:hover {
+  background: #e8e8e8;
+  transform: scale(1.05);
+}
+
+.fc-send-btn.fc-send-btn-active:active {
+  transform: scale(0.95);
+}
+
+/* ── Minimized bubble ── */
+.fc-bubble {
+  position: absolute;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #111116;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.fc-bubble:hover {
+  background: #1a1a22;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
